@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1064836074470",
+    "project_id": "stuteach-6c8bf",
+    "storage_bucket": "stuteach-6c8bf.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1064836074470:android:41d0d5242290002ccea427",
+        "android_client_info": {
+          "package_name": "com.example.stu_teach"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLkSD605CTtt7ods2PuV86M6rw7lFF6Vo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
