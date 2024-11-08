@@ -13,7 +13,6 @@ class LoginRegister extends StatefulWidget {
   @override
   State<LoginRegister> createState() => _LoginRegisterState();
 }
-
 class _LoginRegisterState extends State<LoginRegister> {
   String error_message = '';
   bool login = false;
@@ -30,13 +29,13 @@ class _LoginRegisterState extends State<LoginRegister> {
         SharedPreferences prefs2 = await SharedPreferences.getInstance();
         await prefs2.setBool('isTeacher', true);
         Navigator.push(
-            context, CupertinoPageRoute(builder: (_) => Dashboard_Teacher()));
+            context, CupertinoPageRoute(builder: (_) => TeacherDashboard()));
       } else {
         Navigator.push(
-            context, CupertinoPageRoute(builder: (_) => Dashboard_Student()));
+            context, CupertinoPageRoute(builder: (_) => StudentDashboard()));
       }
       SharedPreferences pref = await SharedPreferences.getInstance();
-      isLoggedIn = await pref.setBool('isLoggedIn', true);
+      await pref.setBool('isLoggedIn', true);
        _emailcontr.text = " ";
                _passwordcontr.text = "";
     } on FirebaseAuthException catch (e) {
@@ -55,13 +54,15 @@ class _LoginRegisterState extends State<LoginRegister> {
           SharedPreferences prefs2 = await SharedPreferences.getInstance();
           await prefs2.setBool('isTeacher', true);
           Navigator.push(
-              context, CupertinoPageRoute(builder: (_) => Dashboard_Teacher()));
+              context, CupertinoPageRoute(builder: (_) => TeacherDashboard()));
         } else {
           Navigator.push(
-              context, CupertinoPageRoute(builder: (_) => Dashboard_Student()));
+              context, CupertinoPageRoute(builder: (_) => StudentDashboard()));
         }
          _emailcontr.text = " ";
-               _passwordcontr.text = "";
+        _passwordcontr.text = "";
+        SharedPreferences pref = await SharedPreferences.getInstance();
+        await pref.setBool('isLoggedIn', true);
       } on FirebaseAuthException catch (e) {
         setState(() {
           error_message = e.message!;

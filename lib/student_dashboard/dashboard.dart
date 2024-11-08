@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:stu_teach/auth.dart';
 import 'package:stu_teach/login_page/login_register.dart';
 
-class Dashboard_Student extends StatefulWidget {
-  const Dashboard_Student({super.key});
+class StudentDashboard extends StatefulWidget {
+  const StudentDashboard({super.key});
 
   @override
-  State<Dashboard_Student> createState() => _Dashboard_StudentState();
+  State<StudentDashboard> createState() => _StudentDashboardState();
 }
 
-class _Dashboard_StudentState extends State<Dashboard_Student> {
+class _StudentDashboardState extends State<StudentDashboard> {
 
   
   final User? user = Auth().currenUser;

@@ -7,66 +7,97 @@ import 'package:image_picker/image_picker.dart';
 import 'package:stu_teach/teacher_dashboard/upload_file.dart';
 
 class AddTask extends StatefulWidget {
-  final last_index;
-  const AddTask({super.key, required this.last_index});
+  final int lastIndex;
+  const AddTask({super.key, required this.lastIndex});
 
   @override
   State<AddTask> createState() => _AddTaskState();
 }
 
 class _AddTaskState extends State<AddTask> {
-  File? _pdf;
-  File? _video;
-  File? _word;
-  File? _audio;
   String? pdf;
   String? word;
   String? video;
   String? image;
   String? audio;
-// Picking files of all extensions except of images 
+  bool errorPicking = false;
+  void showSnackBar1(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text("Error with picking file.. Retry!"),
+      dismissDirection: DismissDirection.vertical,
+      duration: Duration(seconds: 3),
+    ));
+  }
+
+// Picking files of all extensions except of images
   Future<void> pickFile(String extension) async {
+    File? pdf1;
+    File? video1;
+    File? word1;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: extension != "doc" ? [extension] : ["docx", "doc"],
     );
     if (result != null) {
       if (extension == 'pdf') {
-        _pdf = File(result.files.single.path!);
-        pdf = await FirebaseStorageService().uploadFile(_pdf!);
-    
+        pdf1 = File(result.files.single.path!);
+        pdf = await FirebaseStorageService().uploadFile(pdf1);
+        if (pdf == "error") {
+          setState(() {
+            errorPicking = true;
+          });
+        } else {
+          errorPicking = false;
+        }
       } else if (extension == 'doc') {
-        _word = File(result.files.single.path!);
-        word = await FirebaseStorageService().uploadFile(_word!);
-     
+        word1 = File(result.files.single.path!);
+        word = await FirebaseStorageService().uploadFile(word1);
+        if (word == "error") {
+          setState(() {
+            errorPicking = true;
+          });
+        } else {
+          errorPicking = false;
+        }
       } else if (extension == 'mp4') {
-        _video = File(result.files.single.path!);
-        video = await FirebaseStorageService().uploadFile(_video!);
-  
-      }else if (extension == 'ogg') {
-        _audio = File(result.files.single.path!);
-        audio = await FirebaseStorageService().uploadFile(_audio!);
-        
+        video1 = File(result.files.single.path!);
+        video = await FirebaseStorageService().uploadFile(video1);
+        if (video == "error") {
+          setState(() {
+            errorPicking = true;
+          });
+        } else {
+          errorPicking = false;
+        }
       }
     }
   }
 
-  File? _image;
   final ImagePicker _picker = ImagePicker();
 // Picking Images
   Future<void> _pickImage() async {
+    File image1;
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      _image = File(pickedFile.path);
-      image = await FirebaseStorageService().uploadFile(_image!);
+      image1 = File(pickedFile.path);
+
+      image = await FirebaseStorageService().uploadFile(image1);
+      if (image == "error") {
+        setState(() {
+          errorPicking = true;
+        });
+      } else {
+        errorPicking = false;
+      }
     }
   }
+
 // Adding to firestore
   Future<void> addTask(
-      String description, String task_name, String time, int id) async {
+      String description, String taskName, String time, int id) async {
     FirebaseFirestore.instance.collection("task").add({
       "description": description,
-      "task_name": task_name,
+      "task_name": taskName,
       "time": time,
       "id": id,
       "isDone": false,
@@ -78,15 +109,15 @@ class _AddTaskState extends State<AddTask> {
   }
 
   TextEditingController description = TextEditingController();
-  TextEditingController task_name = TextEditingController();
+  TextEditingController taskNameController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Adding tasks"),
+        title: const Text("Adding tasks"),
       ),
       body: SafeArea(
-        child: Container(
+        child: SizedBox(
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           child: Column(
@@ -97,7 +128,7 @@ class _AddTaskState extends State<AddTask> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextField(
-                  controller: task_name,
+                  controller: taskNameController,
                   decoration: InputDecoration(
                       border: OutlineInputBorder(
                           gapPadding: 20,
@@ -130,8 +161,11 @@ class _AddTaskState extends State<AddTask> {
                         InkWell(
                           onTap: () {
                             pickFile('pdf');
+                            if (errorPicking) {
+                              showSnackBar1(context);
+                            }
                           },
-                          child: Container(
+                          child: SizedBox(
                               height: MediaQuery.of(context).size.height * 0.15,
                               width: MediaQuery.of(context).size.width * 0.35,
                               child: Image.asset('assets/pdf.png')),
@@ -142,8 +176,11 @@ class _AddTaskState extends State<AddTask> {
                         InkWell(
                           onTap: () {
                             _pickImage();
+                            if (errorPicking) {
+                              showSnackBar1(context);
+                            }
                           },
-                          child: Container(
+                          child: SizedBox(
                               height: MediaQuery.of(context).size.height * 0.15,
                               width: MediaQuery.of(context).size.width * 0.35,
                               child: Image.asset('assets/image.png')),
@@ -160,8 +197,11 @@ class _AddTaskState extends State<AddTask> {
                       InkWell(
                         onTap: () {
                           pickFile('mp4');
+                          if (errorPicking) {
+                            showSnackBar1(context);
+                          }
                         },
-                        child: Container(
+                        child: SizedBox(
                             height: MediaQuery.of(context).size.height * 0.15,
                             width: MediaQuery.of(context).size.width * 0.35,
                             child: Image.asset('assets/mp4.png')),
@@ -172,15 +212,17 @@ class _AddTaskState extends State<AddTask> {
                       InkWell(
                         onTap: () {
                           pickFile('doc');
+                          if (!errorPicking) {
+                            showSnackBar1(context);
+                          }
                         },
-                        child: Container(
+                        child: SizedBox(
                             height: MediaQuery.of(context).size.height * 0.15,
                             width: MediaQuery.of(context).size.width * 0.35,
                             child: Image.asset('assets/office.png')),
                       ),
                     ],
                   ),
-                 
                 ],
               ),
               SizedBox(
@@ -195,19 +237,22 @@ class _AddTaskState extends State<AddTask> {
                 ),
                 child: MaterialButton(
                   onPressed: () {
-                    if (task_name.value.text != "" &&
+                    if (taskNameController.value.text != "" &&
                         description.value.text != "") {
                       DateTime now = DateTime.now();
                       String formattedDate =
                           "${now.hour}:${now.minute} ${now.day}-${now.month}-${now.year}";
                       if (formattedDate != "") {
-                        addTask(description.value.text, task_name.value.text,
-                            formattedDate, widget.last_index + 1);
+                        addTask(
+                            description.value.text,
+                            taskNameController.value.text,
+                            formattedDate,
+                            widget.lastIndex + 1);
                         Navigator.pop(context);
                       }
                     }
                   },
-                  child: Text(
+                  child: const Text(
                     "Add",
                     style: TextStyle(
                       fontSize: 25,
