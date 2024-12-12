@@ -6,9 +6,10 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:stu_teach/adapters/task.dart';
-import 'package:stu_teach/auth.dart';
+import 'package:stu_teach/adapters/auth.dart';
 import 'package:stu_teach/login_page/login_register.dart';
 import 'package:stu_teach/teacher_dashboard/add_task.dart';
+import 'package:stu_teach/teacher_dashboard/task_page.dart';
 
 class TeacherDashboard extends StatefulWidget {
   const TeacherDashboard({super.key});
@@ -30,7 +31,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         context, CupertinoPageRoute(builder: (_) => const LoginRegister()));
   }
 
-  int last_index = -1;
+  int lastIndex = -1;
 
   Future<List<Task>> getTask() async {
     List<Task> taskList = [];
@@ -47,12 +48,12 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             id: m.get('id'),
             image: m.get('image'),
             pdf: m.get('pdf'),
-            mp4: m.get('video'),
+            video: m.get('video'),
             word: m.get('word'),
           ),
         );
-        if (last_index < m.get("id")) {
-          last_index = m.get("id");
+        if (lastIndex < m.get('id')) {
+          lastIndex = m.get('id');
         }
       }
     });
@@ -61,13 +62,14 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   void showSnackBar1(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text("Successfuly deleted"),
+      content: Text("Successfully deleted"),
       dismissDirection: DismissDirection.vertical,
       duration: Duration(seconds: 3),
     ));
   }
 
   late String errorMessage;
+
   Future<void> deleteTask(int id) async {
     try {
       CollectionReference tasksCollection =
@@ -80,15 +82,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         String docId = querySnapshot.docs.first.id;
 
         await tasksCollection.doc(docId).delete();
-        print("IDD");
-        errorMessage = "Succesfully deleted the task";
+
+        errorMessage = "Successfully deleted the task";
       } else {
-        print("NOT IDD");
         errorMessage = "ID PROBLEM";
       }
     } catch (e) {
       errorMessage = e.toString();
-      print("ERORRRRRR");
     }
   }
 
@@ -98,35 +98,52 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       length: 2,
       initialIndex: 0,
       child: Scaffold(
-          appBar: AppBar(
-            title: TextButton(
-              onPressed: () {
-                setState(() {});
-              },
-              // style: TextButton.styleFrom(
-              //  // fixedSize: Size(MediaQuery.of(context).size.width * 0.15,MediaQuery.of(context).size.height * 0.001)
-              // ),
-              child: const Text(
-                "Teacher",
-                style: TextStyle(fontSize: 20),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () async {
+            Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (_) => AddTask(
+                  lastIndex: lastIndex,
+                ),
               ),
+            );
+          },
+          child: const Icon(Icons.add),
+        ),
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          backgroundColor: Colors.blue[400],
+          title: TextButton(
+            onPressed: () {
+              setState(() {});
+            },
+            child: const Text(
+              "Teacher",
+              style: TextStyle(fontSize: 20),
             ),
-            bottom: const TabBar(tabs: <Widget>[
-              Tab(
-                icon: Icon(Icons.task),
-              ),
-              Tab(
-                icon: Icon(Icons.person_2),
-              ),
-            ]),
-            actions: [
-              MaterialButton(
-                onPressed: signOut,
-                child: const Icon(Icons.exit_to_app),
-              )
-            ],
           ),
-          body: TabBarView(children: <Widget>[
+          bottom: const TabBar(tabs: <Widget>[
+            Tab(
+              icon: Icon(Icons.task),
+            ),
+            Tab(
+              icon: Icon(Icons.person_2),
+            ),
+          ]),
+          actions: [
+            MaterialButton(
+              onPressed: signOut,
+              child: const Icon(
+                Icons.exit_to_app,
+                color: Colors.white70,
+              ),
+            )
+          ],
+        ),
+        backgroundColor: Colors.blue[100],
+        body: TabBarView(
+          children: <Widget>[
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.85,
               width: MediaQuery.of(context).size.width,
@@ -165,76 +182,105 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                             ),
                           );
                         } else {
-                          return ListView.separated(
+                          return ListView.builder(
                               itemBuilder: (context, index) {
-                                return Slidable(
-                                  key: Key("${snapshot.data![index]}"),
-                                  endActionPane: ActionPane(
-                                      motion: const ScrollMotion(),
-                                      children: [
-                                        SlidableAction(
-                                          onPressed: (context) {
-                                            deleteTask(
-                                              snapshot.data![index].id,
-                                            );
-                                            setState(() {});
-                                            showSnackBar1(context);
-                                          },
-                                          backgroundColor: Colors.red,
-                                          icon: CupertinoIcons.trash,
-                                        ),
-                                      ]),
-                                  child: ListTile(
-                                      leading:
-                                          Text("${snapshot.data?[index].id}"),
-                                      title:
-                                          Text(snapshot.data![index].taskname),
-                                      trailing:
-                                          Text(snapshot.data![index].time),
+                                return SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.12,
+                                  width: MediaQuery.of(context).size.width,
+                                  child: Slidable(
+                                    key: Key("${snapshot.data![index]}"),
+                                    endActionPane: ActionPane(
+                                        motion: const ScrollMotion(),
+                                        children: [
+                                          SlidableAction(
+                                            onPressed: (context) {
+                                              deleteTask(
+                                                snapshot.data![index].id,
+                                              ).whenComplete(() {
+                                                setState(() {});
+                                              });
+                                              showSnackBar1(context);
+                                            },
+                                            backgroundColor: Colors.red,
+                                            icon: CupertinoIcons.trash,
+                                          ),
+                                        ]),
+                                    child: InkWell(
                                       onTap: () {
-                                        // Navigator.push(
-                                        //     context,
-                                        // CupertinoPageRoute(
-                                        //     builder: (_) => TaskPage(
-                                        //           task: Task(
-                                        //               description: snapshot
-                                        //                   .data![index]
-                                        //                   .description,
-                                        //               task_name: snapshot
-                                        //                   .data![index]
-                                        //                   .task_name,
-                                        //               time: snapshot
-                                        //                   .data![index]
-                                        //                   .time,
-                                        //               id: snapshot
-                                        //                   .data![index]
-                                        //                   .id,
-                                        //               image: snapshot
-                                        //                   .data?[index]
-                                        //                   .image,
-                                        //               pdf: snapshot
-                                        //                   .data?[index]
-                                        //                   .pdf,
-                                        //               mp4: snapshot
-                                        //                   .data?[index]
-                                        //                   .mp4,
-                                        //               word: snapshot
-                                        //                   .data?[index]
-                                        //                   .word,
-                                        //               audio: snapshot
-                                        //                   .data![index]
-                                        //                   .audio),
-                                        //         ))
-                                        //         );
-                                      }),
-                                );
-                              },
-                              separatorBuilder: (context, index) {
-                                return const Padding(
-                                  padding:
-                                      EdgeInsets.only(left: 8.0, right: 8.0),
-                                  child: Divider(
-                                    color: Colors.black,
+                                        Navigator.push(
+                                            context,
+                                            CupertinoPageRoute(
+                                                builder: (_) => TaskPage(
+                                                      task: Task(
+                                                        description: snapshot
+                                                            .data![index]
+                                                            .description,
+                                                        taskname: snapshot
+                                                            .data![index]
+                                                            .taskname,
+                                                        time: snapshot
+                                                            .data![index].time,
+                                                        id: snapshot
+                                                            .data![index].id,
+                                                        image: snapshot
+                                                            .data?[index].image,
+                                                        pdf: snapshot
+                                                            .data?[index].pdf,
+                                                        video: snapshot
+                                                            .data?[index].video,
+                                                        word: snapshot
+                                                            .data?[index].word,
+                                                      ),
+                                                    )));
+                                      },
+                                      child: Card(
+                                        color: Colors.blue[200],
+                                        elevation: 3,
+                                        shadowColor: Colors.blue,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        margin: const EdgeInsets.all(10),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Row(
+                                            children: [
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "${snapshot.data![index].id}"
+                                                    "."
+                                                    "${snapshot.data![index].taskname}",
+                                                    style: const TextStyle(
+                                                        fontSize: 25,
+                                                        fontWeight:
+                                                            FontWeight.w700),
+                                                  ),
+                                                  SizedBox(
+                                                    width:
+                                                        MediaQuery.of(context)
+                                                                .size
+                                                                .width *
+                                                            0.9,
+                                                    child: Text(
+                                                      snapshot.data![index]
+                                                          .description,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  )
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 );
                               },
@@ -243,27 +289,29 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                       },
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12.0, top: 8.0),
-                    child: FloatingActionButton(
-                      onPressed: () async {
-                        Navigator.push(
-                            context,
-                            CupertinoPageRoute(
-                                builder: (_) => AddTask(
-                                      lastIndex: last_index,
-                                    )));
-                      },
-                      child: const Icon(Icons.add),
-                    ),
-                  )
                 ],
               ),
             ),
-            const Center(
-              child: Text("data"),
+            RefreshIndicator(
+              onRefresh: () {
+                setState(() {});
+                throw Exception();
+              },
+              child: GridView.extent(
+                maxCrossAxisExtent: 150.0, // Max width of each item
+                crossAxisSpacing: 10.0,
+                mainAxisSpacing: 10.0,
+                children: List.generate(20, (index) {
+                  return Container(
+                    color: Colors.purple,
+                    child: Center(child: Text('Item $index')),
+                  );
+                }),
+              ),
             )
-          ])),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:stu_teach/teacher_dashboard/upload_file.dart';
+
+import 'package:stu_teach/adapters/upload_file.dart';
 
 class AddTask extends StatefulWidget {
   final int lastIndex;
@@ -17,78 +19,47 @@ class AddTask extends StatefulWidget {
 class _AddTaskState extends State<AddTask> {
   String? pdf;
   String? word;
-  String? video;
+  String? mp4;
   String? image;
-  String? audio;
+  String? filePath;
   bool errorPicking = false;
-  void showSnackBar1(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text("Error with picking file.. Retry!"),
+  bool waitUrl = false;
+  void showSnackBar1(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(text),
       dismissDirection: DismissDirection.vertical,
-      duration: Duration(seconds: 3),
+      duration: const Duration(seconds: 3),
     ));
   }
 
-// Picking files of all extensions except of images
   Future<void> pickFile(String extension) async {
-    File? pdf1;
-    File? video1;
-    File? word1;
+    waitUrl = true;
+    File? file;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: extension != "doc" ? [extension] : ["docx", "doc"],
     );
     if (result != null) {
-      if (extension == 'pdf') {
-        pdf1 = File(result.files.single.path!);
-        pdf = await FirebaseStorageService().uploadFile(pdf1);
-        if (pdf == "error") {
-          setState(() {
-            errorPicking = true;
-          });
-        } else {
-          errorPicking = false;
-        }
-      } else if (extension == 'doc') {
-        word1 = File(result.files.single.path!);
-        word = await FirebaseStorageService().uploadFile(word1);
-        if (word == "error") {
-          setState(() {
-            errorPicking = true;
-          });
-        } else {
-          errorPicking = false;
-        }
-      } else if (extension == 'mp4') {
-        video1 = File(result.files.single.path!);
-        video = await FirebaseStorageService().uploadFile(video1);
-        if (video == "error") {
-          setState(() {
-            errorPicking = true;
-          });
-        } else {
-          errorPicking = false;
-        }
-      }
+      file = File(result.files.single.path!);
+      filePath = await FirebaseStorageService().uploadFile(file);
+      errorPicking = false;
+    } else {
+      errorPicking = true;
     }
   }
 
   final ImagePicker _picker = ImagePicker();
 // Picking Images
   Future<void> _pickImage() async {
+    waitUrl = true;
     File image1;
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       image1 = File(pickedFile.path);
-
       image = await FirebaseStorageService().uploadFile(image1);
-      if (image == "error") {
-        setState(() {
-          errorPicking = true;
-        });
-      } else {
-        errorPicking = false;
-      }
+      errorPicking = false;
+    } else {
+      errorPicking = true;
     }
   }
 
@@ -100,11 +71,10 @@ class _AddTaskState extends State<AddTask> {
       "task_name": taskName,
       "time": time,
       "id": id,
-      "isDone": false,
       "image": image,
-      "video": video,
+      "pdf": pdf,
+      "video": mp4,
       "word": word,
-      "pdf": pdf
     });
   }
 
@@ -113,9 +83,22 @@ class _AddTaskState extends State<AddTask> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text("Adding tasks"),
+        backgroundColor: Colors.blue[500],
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(CupertinoIcons.back),
+          color: Colors.white70,
+        ),
+        title: const Text(
+          "Adding task",
+          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white70),
+        ),
       ),
+      backgroundColor: Colors.blue[200],
       body: SafeArea(
         child: SizedBox(
           width: MediaQuery.of(context).size.width,
@@ -159,11 +142,16 @@ class _AddTaskState extends State<AddTask> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         InkWell(
-                          onTap: () {
-                            pickFile('pdf');
-                            if (errorPicking) {
-                              showSnackBar1(context);
-                            }
+                          onTap: () async {
+                            pickFile('pdf').whenComplete(() {
+                              if (errorPicking) {
+                                showSnackBar1("Error while picking pdf");
+                              } else {
+                                pdf = filePath;
+                                showSnackBar1("Complete");
+                              }
+                              waitUrl = false;
+                            });
                           },
                           child: SizedBox(
                               height: MediaQuery.of(context).size.height * 0.15,
@@ -175,10 +163,14 @@ class _AddTaskState extends State<AddTask> {
                         ),
                         InkWell(
                           onTap: () {
-                            _pickImage();
-                            if (errorPicking) {
-                              showSnackBar1(context);
-                            }
+                            _pickImage().whenComplete(() {
+                              if (errorPicking) {
+                                showSnackBar1("Error while picking image");
+                              } else {
+                                showSnackBar1("Complete");
+                              }
+                              waitUrl = false;
+                            });
                           },
                           child: SizedBox(
                               height: MediaQuery.of(context).size.height * 0.15,
@@ -196,10 +188,17 @@ class _AddTaskState extends State<AddTask> {
                     children: [
                       InkWell(
                         onTap: () {
-                          pickFile('mp4');
-                          if (errorPicking) {
-                            showSnackBar1(context);
-                          }
+                          pickFile('mp4').whenComplete(
+                            () {
+                              if (errorPicking) {
+                                showSnackBar1("Error while picking video");
+                              } else {
+                                mp4 = filePath;
+                                showSnackBar1("Complete");
+                              }
+                              waitUrl = false;
+                            },
+                          );
                         },
                         child: SizedBox(
                             height: MediaQuery.of(context).size.height * 0.15,
@@ -211,10 +210,17 @@ class _AddTaskState extends State<AddTask> {
                       ),
                       InkWell(
                         onTap: () {
-                          pickFile('doc');
-                          if (!errorPicking) {
-                            showSnackBar1(context);
-                          }
+                          pickFile('doc').whenComplete(
+                            () {
+                              if (errorPicking) {
+                                showSnackBar1("Error while picking word");
+                              } else {
+                                word = filePath;
+                                showSnackBar1("Complete");
+                              }
+                              waitUrl = false;
+                            },
+                          );
                         },
                         child: SizedBox(
                             height: MediaQuery.of(context).size.height * 0.15,
@@ -236,22 +242,23 @@ class _AddTaskState extends State<AddTask> {
                   color: Colors.blue,
                 ),
                 child: MaterialButton(
-                  onPressed: () {
-                    if (taskNameController.value.text != "" &&
-                        description.value.text != "") {
-                      DateTime now = DateTime.now();
-                      String formattedDate =
-                          "${now.hour}:${now.minute} ${now.day}-${now.month}-${now.year}";
-                      if (formattedDate != "") {
-                        addTask(
-                            description.value.text,
-                            taskNameController.value.text,
-                            formattedDate,
-                            widget.lastIndex + 1);
-                        Navigator.pop(context);
-                      }
-                    }
-                  },
+                  onPressed: waitUrl
+                      ? null
+                      : () async {
+                          if (taskNameController.value.text != "" &&
+                              description.value.text != "") {
+                            DateTime now = DateTime.now();
+                            String formattedDate =
+                                "${now.hour}:${now.minute} ${now.day}-${now.month}-${now.year}";
+                            await Future.delayed(const Duration(seconds: 2));
+                            addTask(
+                                description.value.text,
+                                taskNameController.value.text,
+                                formattedDate,
+                                widget.lastIndex + 1);
+                            Navigator.pop(context);
+                          }
+                        },
                   child: const Text(
                     "Add",
                     style: TextStyle(

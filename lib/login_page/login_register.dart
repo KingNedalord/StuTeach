@@ -1,9 +1,12 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_carousel_slider/carousel_slider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:stu_teach/auth.dart';
+import 'package:stu_teach/adapters/auth.dart';
 import 'package:stu_teach/student_dashboard/dashboard.dart';
 import 'package:stu_teach/teacher_dashboard/dashboard.dart';
 
@@ -13,13 +16,14 @@ class LoginRegister extends StatefulWidget {
   @override
   State<LoginRegister> createState() => _LoginRegisterState();
 }
+
 class _LoginRegisterState extends State<LoginRegister> {
-  String error_message = '';
+  String errorMessage = '';
   bool login = false;
   bool? isLoggedIn;
 
-  TextEditingController _emailcontr = TextEditingController();
-  TextEditingController _passwordcontr = TextEditingController();
+  final TextEditingController _emailcontr = TextEditingController();
+  final TextEditingController _passwordcontr = TextEditingController();
 
   Future<void> signInWithEmailAndPassword(bool isTeacher) async {
     try {
@@ -28,19 +32,19 @@ class _LoginRegisterState extends State<LoginRegister> {
       if (isTeacher) {
         SharedPreferences prefs2 = await SharedPreferences.getInstance();
         await prefs2.setBool('isTeacher', true);
-        Navigator.push(
-            context, CupertinoPageRoute(builder: (_) => TeacherDashboard()));
+        Navigator.push(context,
+            CupertinoPageRoute(builder: (_) => const TeacherDashboard()));
       } else {
-        Navigator.push(
-            context, CupertinoPageRoute(builder: (_) => StudentDashboard()));
+        Navigator.push(context,
+            CupertinoPageRoute(builder: (_) => const StudentDashboard()));
       }
       SharedPreferences pref = await SharedPreferences.getInstance();
       await pref.setBool('isLoggedIn', true);
-       _emailcontr.text = " ";
-               _passwordcontr.text = "";
+      _emailcontr.text = " ";
+      _passwordcontr.text = "";
     } on FirebaseAuthException catch (e) {
       setState(() {
-        error_message = e.message!;
+        errorMessage = e.message!;
       });
     }
   }
@@ -53,35 +57,45 @@ class _LoginRegisterState extends State<LoginRegister> {
         if (isTeacher) {
           SharedPreferences prefs2 = await SharedPreferences.getInstance();
           await prefs2.setBool('isTeacher', true);
-          Navigator.push(
-              context, CupertinoPageRoute(builder: (_) => TeacherDashboard()));
+          Navigator.push(context,
+              CupertinoPageRoute(builder: (_) => const TeacherDashboard()));
         } else {
-          Navigator.push(
-              context, CupertinoPageRoute(builder: (_) => StudentDashboard()));
+          String uid = Auth().currenUser!.uid;
+          DocumentReference docRef =
+              FirebaseFirestore.instance.collection("students").doc(uid);
+          docRef.set({"name": "Student1", "assignments": []});
+          Navigator.push(context,
+              CupertinoPageRoute(builder: (_) => const StudentDashboard()));
         }
-         _emailcontr.text = " ";
+        _emailcontr.text = " ";
         _passwordcontr.text = "";
         SharedPreferences pref = await SharedPreferences.getInstance();
         await pref.setBool('isLoggedIn', true);
       } on FirebaseAuthException catch (e) {
         setState(() {
-          error_message = e.message!;
+          errorMessage = e.message!;
         });
       }
     } else {
       setState(() {
-        error_message = "Password must contain more than 6 symbols";
+        errorMessage = "Password must contain more than 6 symbols";
       });
     }
   }
 
   Widget _title() {
-    return const Text('StuTeach');
+    return const Text(
+      'StuTeach',
+      style: TextStyle(
+        fontSize: 25,
+        fontWeight: FontWeight.bold,
+      ),
+    );
   }
 
   Widget _entryField(String title, TextEditingController controller) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -93,8 +107,8 @@ class _LoginRegisterState extends State<LoginRegister> {
 
   Widget _erorrMessage() {
     return Text(
-      error_message == "" ? "" : "$error_message",
-      style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
+      errorMessage == "" ? "" : errorMessage,
+      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
     );
   }
 
@@ -106,6 +120,7 @@ class _LoginRegisterState extends State<LoginRegister> {
           } else {
             createUserWithEmailAndPassword(isTeacher);
           }
+          FocusScope.of(context).unfocus();
         },
         child: Text(login ? 'Login' : 'Register'));
   }
@@ -124,24 +139,28 @@ class _LoginRegisterState extends State<LoginRegister> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFFEBE5E5),
         title: _title(),
       ),
       body: CarouselSlider(
-        slideTransform: CubeTransform(),
+        slideTransform: const CubeTransform(),
         slideIndicator:
-            CircularSlideIndicator(padding: EdgeInsets.only(bottom: 10)),
+            CircularSlideIndicator(padding: const EdgeInsets.only(bottom: 10)),
         children: [
           Container(
             width: double.infinity,
             height: double.infinity,
-            color: Colors.green[300],
+            color: Colors.green[400],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Text(
+                const Text(
                   "Student",
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(
+                      fontSize: 25,
+                      // color: Colors.bla,
+                      fontWeight: FontWeight.w600),
                 ),
                 SizedBox(
                   height: MediaQuery.of(context).size.height * 0.02,
@@ -162,9 +181,12 @@ class _LoginRegisterState extends State<LoginRegister> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Text(
+                const Text(
                   "Teacher",
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(
+                      fontSize: 25,
+                      // color: Colors.white,
+                      fontWeight: FontWeight.w600),
                 ),
                 SizedBox(
                   height: MediaQuery.of(context).size.height * 0.02,
